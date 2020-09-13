@@ -28,12 +28,12 @@ namespace ClickTest {
                 }
                 string message;
                 if (args.Length == 0)
-                    message = "xp farm";
+                    message = "** **";
                 else
                     message = args[0];
-                int delay;
-                if (args.Length > 2 || !int.TryParse(args[1], out delay))
-                    delay = 60;
+                int delay = 60;
+                if (args.Length > 1)
+                    int.TryParse(args[1], out delay);
                 SendKeys.SendWait(message + "{ENTER}");
                 Thread.Sleep(delay * 1000);
             }
