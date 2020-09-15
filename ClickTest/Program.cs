@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 
-namespace ClickTest {
+namespace DiscordSpammer {
     static class Program {
         [DllImport("User32.dll")]
         private static extern bool SetForegroundWindow(IntPtr handle);
@@ -26,7 +26,12 @@ namespace ClickTest {
                 message = args[0];
             int delay = 60;
 
+            if (args.Length > 1)
+                int.TryParse(args[1], out delay);
+
             int messages = 0;
+
+
 
             DateTime lastSend = DateTime.Now;
 
@@ -36,10 +41,13 @@ namespace ClickTest {
                 Thread.CurrentThread.IsBackground = true;
                 while (true) {
                     Process[] processes = Process.GetProcessesByName("discord");
+                    //Check if discord is open
                     if (processes.Length == 0) {
                         Console.WriteLine("\nDiscord is not open. Terminating.");
                         return;
                     }
+                    //Set discord to active application
+                    //If it's minimized, open it
                     foreach (Process proc in processes) {
                         proc.Refresh();
                         if (IsIconic(proc.MainWindowHandle)) {
@@ -48,8 +56,7 @@ namespace ClickTest {
                         SetForegroundWindow(proc.MainWindowHandle);
                     }
 
-                    if (args.Length > 1)
-                        int.TryParse(args[1], out delay);
+
                     SendKeys.SendWait(message + "{ENTER}");
                     lastSend = DateTime.Now;
                     Thread.Sleep(delay * 1000);
@@ -67,7 +74,6 @@ namespace ClickTest {
                     if (split.Length < 2) continue;
                     message = string.Concat(split.Skip(1));
                     Console.WriteLine("message changed to {0}", message);
-                    Environment.Exit(Environment.ExitCode);
                 }
                 if (input.StartsWith("delay", StringComparison.OrdinalIgnoreCase)) {
                     var split = input.Split(new[] { '=' },2);
@@ -75,11 +81,9 @@ namespace ClickTest {
                     if (int.TryParse(split[1], out delay)) {
                         Console.WriteLine("delay changed to {0}", delay);
                     }
-                    Environment.Exit(Environment.ExitCode);
                 }
                 if (input.Equals("diagnostics", StringComparison.OrdinalIgnoreCase)) {
                     Console.WriteLine("message = {0}\ndelay = {1}\ntime till next = {2} seconds", message, delay, delay - (DateTime.Now - lastSend).Seconds);
-                    Environment.Exit(Environment.ExitCode);
                 }
             }
         }

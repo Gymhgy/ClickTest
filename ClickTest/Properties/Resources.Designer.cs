@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace ClickTest.Properties {
+namespace DiscordSpammer.Properties {
 
 
     /// <summary>
