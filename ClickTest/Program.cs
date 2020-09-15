@@ -31,7 +31,7 @@ namespace DiscordSpammer {
 
             int messages = 0;
 
-
+            int calcDelay = delay;
 
             DateTime lastSend = DateTime.Now;
 
@@ -58,12 +58,15 @@ namespace DiscordSpammer {
 
 
                     SendKeys.SendWait(message + "{ENTER}");
+                    messages++;
                     lastSend = DateTime.Now;
                     Thread.Sleep(delay * 1000);
+                    calcDelay = delay;
                 }
             }).Start();
 
             while (true) {
+                Console.Write("> ");
                 var input = Console.ReadLine();
                 if (input.Equals("stop", StringComparison.OrdinalIgnoreCase)) {
                     Console.WriteLine("{0} messages were sent over {1} seconds. Exiting...", messages, delay);
@@ -83,7 +86,7 @@ namespace DiscordSpammer {
                     }
                 }
                 if (input.Equals("diagnostics", StringComparison.OrdinalIgnoreCase)) {
-                    Console.WriteLine("message = {0}\ndelay = {1}\ntime till next = {2} seconds", message, delay, delay - (DateTime.Now - lastSend).Seconds);
+                    Console.WriteLine("message = {0}\ndelay = {1}\ntime till next = {2} seconds", message, delay, calcDelay - (DateTime.Now - lastSend).Seconds);
                 }
             }
         }
