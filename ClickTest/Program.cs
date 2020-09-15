@@ -44,7 +44,7 @@ namespace DiscordSpammer {
                     //Check if discord is open
                     if (processes.Length == 0) {
                         Console.WriteLine("\nDiscord is not open. Terminating.");
-                        return;
+                        Environment.Exit(Environment.ExitCode);
                     }
                     //Set discord to active application
                     //If it's minimized, open it
