@@ -4,6 +4,8 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using System.Timers;
+using System.Threading.Tasks;
 
 namespace DiscordSpammer {
     static class Program {
@@ -33,44 +35,71 @@ namespace DiscordSpammer {
 
             int calcDelay = delay;
 
-            DateTime lastSend = DateTime.Now;
+            var stopwatch = new Stopwatch();
+
+            bool paused = false;
 
             Console.WriteLine("Launching program with message '{0}' and {1} sec delay", message, delay);
 
-            new Thread(() => {
-                Thread.CurrentThread.IsBackground = true;
-                while (true) {
-                    Process[] processes = Process.GetProcessesByName("discord");
-                    //Check if discord is open
-                    if (processes.Length == 0) {
-                        Console.WriteLine("\nDiscord is not open. Terminating.");
-                        Environment.Exit(Environment.ExitCode);
-                    }
-                    //Set discord to active application
-                    //If it's minimized, open it
-                    foreach (Process proc in processes) {
-                        proc.Refresh();
-                        if (IsIconic(proc.MainWindowHandle)) {
-                            ShowWindow(proc.MainWindowHandle, SW_RESTORE);
-                        }
-                        SetForegroundWindow(proc.MainWindowHandle);
-                    }
-
-
-                    SendKeys.SendWait(message + "{ENTER}");
-                    messages++;
-                    lastSend = DateTime.Now;
-                    Thread.Sleep(delay * 1000);
-                    calcDelay = delay;
+            //Set spamming work to a timer, with initial delay of 1s (to fire the spamming event immediately)
+            var timer = new System.Timers.Timer(1000);
+            timer.Elapsed += (t, a) => {
+                //Change the delay to the real delay
+                timer.Interval = delay * 1000;
+                //Restart the stopwatch for diagnostic purposes
+                stopwatch.Restart();
+                Process[] processes = Process.GetProcessesByName("discord");
+                //Check if discord is open
+                if (processes.Length == 0) {
+                    Console.WriteLine("\nDiscord is not open. Please close the window or type \"retry\" to try again.");
                 }
-            }).Start();
+                //Set discord to active application
+                //If it's minimized, open it
+                foreach (Process proc in processes) {
+                    proc.Refresh();
+                    if (IsIconic(proc.MainWindowHandle)) {
+                        ShowWindow(proc.MainWindowHandle, SW_RESTORE);
+                    }
+                    SetForegroundWindow(proc.MainWindowHandle);
+                }
 
+                //Feed keystrokes into discord
+                SendKeys.SendWait(message + "{ENTER}");
+                messages++;
+                
+                calcDelay = delay;
+            };
+            timer.Start();
+
+            //Handle user input
             while (true) {
                 Console.Write("> ");
                 var input = Console.ReadLine();
-                if (input.Equals("stop", StringComparison.OrdinalIgnoreCase)) {
-                    Console.WriteLine("{0} messages were sent over {1} seconds. Exiting...", messages, delay);
+                if (input.Equals("exit", StringComparison.OrdinalIgnoreCase)) {
+                    timer.Dispose();
                     Environment.Exit(Environment.ExitCode);
+                }
+                if (input.Equals("pause", StringComparison.OrdinalIgnoreCase)) {
+                    if (paused) {
+                        Console.WriteLine("program already paused");
+                        continue;
+                    }
+                    stopwatch.Stop();
+                    timer.Stop();
+                    paused = true;
+                    Console.WriteLine("paused");
+                }
+                if (input.Equals("unpause", StringComparison.OrdinalIgnoreCase)) {
+                    if(!paused) {
+                        Console.WriteLine("program currently isn't paused");
+                        continue;
+                    }
+                    stopwatch.Start();
+                    timer.Start();
+                    //Set timer delay to remaining time after the pause
+                    timer.Interval = delay * 1000 + stopwatch.Elapsed.Milliseconds;
+                    paused = false;
+                    Console.WriteLine("unpaused");
                 }
                 if (input.StartsWith("message", StringComparison.OrdinalIgnoreCase)) {
                     var split = input.Split(new[] { '=' }, 2);
@@ -86,7 +115,8 @@ namespace DiscordSpammer {
                     }
                 }
                 if (input.Equals("diagnostics", StringComparison.OrdinalIgnoreCase)) {
-                    Console.WriteLine("message = {0}\ndelay = {1}\ntime till next = {2} seconds", message, delay, calcDelay - (DateTime.Now - lastSend).Seconds);
+                    Console.WriteLine("message = {0}\ndelay = {1}\ntime till next = {2} seconds\nmessages sent = {3}", message, delay, calcDelay - stopwatch.Elapsed.Seconds, messages);
+                    if (paused) Console.WriteLine("currently paused");
                 }
             }
         }
